@@ -1,0 +1,13 @@
+D:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.exe.config
+D:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.exe
+D:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.pdb
+D:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache
+D:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.exe
+D:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.pdb
+E:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.exe.config
+E:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.exe
+E:\OneDrive\Программы\project\TJ\TJ\bin\Debug\TJ.pdb
+E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache
+E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.csproj.CoreCompileInputs.cache
+E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.exe
+E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.pdb
