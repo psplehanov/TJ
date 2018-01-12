@@ -47,17 +47,24 @@ namespace TJ
 
     class Program
     {
+        public const int buflen = 16384;
+
         static void Main(string[] args)
         {
+#if (DEBUG)
             DateTime localDate = DateTime.Now;
+#endif
 
-            String path = @"D:\ТЖ\SDBL\1CV8C_1232";
+            String path = @"D:\ТЖ";
             ReadTJ(path);
 
+#if (DEBUG)
             DateTime localDateEnd = DateTime.Now;
             Console.WriteLine(localDateEnd - localDate);
+            Console.ReadKey();
+#endif
         }
-        
+
         /// <summary>
         /// Извлекает параметр из строки ТЖ.
         /// </summary>
@@ -73,13 +80,84 @@ namespace TJ
             return tmp;
         }
 
+        static TJobject ParseStringTJ(string strTJ, string filename)
+        {
+            CultureInfo provider = CultureInfo.InvariantCulture;
+            TJobject T = new TJobject();
+
+            string tmp = "";
+
+            //дата и время начала выполнения
+            var subpattern = new Regex("[0-9][0-9]:[0-9][0-9]");
+            tmp = filename + subpattern.Match(strTJ).Value;
+            T.date = DateTime.ParseExact(tmp, "yyMMddHHmm:ss", provider);
+            tmp = "";
+
+            //микросекунды (десятитысячные для 8.2) начала выполнения
+            subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+");
+            tmp = subpattern.Match(strTJ).Value;
+            tmp = tmp.Substring(6);
+            T.mks = Convert.ToInt32(tmp);
+            tmp = "";
+
+            //длительность операции (для 8.2 десятитысячные после . 4 знака )
+            subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+");
+            tmp = subpattern.Match(strTJ).Value;
+            subpattern = new Regex("-[0-9]+");
+            tmp = subpattern.Match(tmp).Value;
+            tmp = tmp.Substring(1);
+            T.durability = Convert.ToUInt64(tmp);
+            tmp = "";
+
+            //имя события
+            subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+,[^,\\r$]*");
+            tmp = subpattern.Match(strTJ).Value;
+            subpattern = new Regex(",.+");
+            tmp = subpattern.Match(tmp).Value;
+            if (tmp.Length != 0) { tmp = tmp.Substring(1); }
+            T.tjevent = tmp;
+            tmp = "";
+
+            //уровень события в стеке
+            subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+,[^,\\r$]*,[0-9]+");
+            tmp = subpattern.Match(strTJ).Value;
+            subpattern = new Regex(",[0-9]+");
+            tmp = subpattern.Match(tmp).Value;
+            if (tmp.Length != 0) { tmp = tmp.Substring(1); } else { tmp = null; }
+            T.level = Convert.ToInt32(tmp);
+            tmp = "";
+
+            //поиск свойств
+            T.property.process = GetParam(@"process=", strTJ);
+            T.property.processName = GetParam(@"p:processName=", strTJ);
+            T.property.clientID = GetParam(@"t:clientID=", strTJ);
+            T.property.applicationName = GetParam(@"t:applicationName=", strTJ);
+            T.property.computerName = GetParam(@"t:computerName=", strTJ);
+            T.property.Interface = GetParam(@"Interface=", strTJ);
+            T.property.IName = GetParam(@"IName=", strTJ);
+            T.property.Method = GetParam(@"Method=", strTJ);
+            T.property.CallID = Convert.ToInt32(GetParam(@"CallID=", strTJ));
+            T.property.MName = GetParam(@"MName=", strTJ);
+            T.property.Memory = Convert.ToInt32(GetParam(@"Memory=", strTJ));
+            T.property.MemoryPeak = Convert.ToInt32(GetParam(@"MemoryPeak=", strTJ));
+            T.property.MemoryPeak = Convert.ToInt32(GetParam(@"MemoryPeak=", strTJ));
+            T.property.InBytes = Convert.ToInt32(GetParam(@"InBytes=", strTJ));
+            T.property.OutBytes = Convert.ToInt32(GetParam(@"OutBytes=", strTJ));
+            T.property.Protected = Convert.ToInt32(GetParam(@"Protected=", strTJ));
+            T.property.Txt = GetParam(@"Txt=", strTJ);
+            T.property.address = GetParam(@"address=", strTJ);
+            T.property.result = GetParam(@"result=", strTJ);
+            T.property.Usr = GetParam(@"Usr=", strTJ);
+
+            return T;
+        }
+
         static List<TJobject> ReadTJ(string path)
         {
             List<TJobject> TJList = new List<TJobject>();
-            CultureInfo provider = CultureInfo.InvariantCulture;
+            char[] buffer = new char[buflen];
 
             List<string> files = new List<string>(Directory.EnumerateFiles(path, "*.log", SearchOption.AllDirectories));
-
 
             foreach (var f in files)
             {
@@ -87,82 +165,37 @@ namespace TJ
                 string datesfile = patternfile.Match(f).Value;
                 datesfile = datesfile.Remove(8);
 
-                //В файле ТЖ окончание строки CRLF после всех контекстов
-                //в контекстах внутри записи используется переносы LF после которых становится символ начала строки
-                //поэтому ищем начало записи по времени
-                var pattern = new Regex("[0-9][0-9]:[0-9][0-9]\\.[0-9]{4}.+");
-                var readText = pattern.Matches(File.ReadAllText(f));
+                StreamReader objReader = new StreamReader(f);
 
-                foreach (Match item in readText)
+                int len = 0;
+                string roll = "";
+                while ((len = objReader.ReadBlock(buffer, 0, buflen)) != 0)
                 {
-                    TJobject T = new TJobject();
-                    string tmp = "";
+                    string bufstr = new string(buffer);
+                    if (len < buflen) { bufstr = bufstr.Remove(len); }
+                    var tpattern = new Regex("[0-9][0-9]:[0-9][0-9]\\.[0-9]{4}.+");
+                    var read = tpattern.Matches(bufstr);
 
+                    int rollindex = 0;
+                    if (read.Count > 0) { rollindex = bufstr.IndexOf(read[0].Value); }
+                    int lastcount = read.Count;
 
-                    //дата и время начала выполнения
-                    var subpattern = new Regex("[0-9][0-9]:[0-9][0-9]");
-                    tmp = datesfile + subpattern.Match(item.Value).Value;
-                    T.date = DateTime.ParseExact(tmp, "yyMMddHHmm:ss", provider);
-                    tmp = "";   
-                    
-                    //микросекунды (десятитысячные для 8.2) начала выполнения
-                    subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+");
-                    tmp = subpattern.Match(item.Value).Value;
-                    tmp = tmp.Substring(6);
-                    T.mks = Convert.ToInt32(tmp);
-                    tmp = "";
+                    int ind = 0;
+                    foreach (Match item in read)
+                    {
+                        if (rollindex != 0)
+                        {
+                            string firststring = roll + bufstr.Remove(rollindex);
+                            TJList.Add(ParseStringTJ(firststring, datesfile));
+                            rollindex = 0;
+                        }
 
-                    //длительность операции (для 8.2 десятитысячные после . 4 знака )
-                    subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+");
-                    tmp = subpattern.Match(item.Value).Value;
-                    subpattern = new Regex("-[0-9]+");
-                    tmp = subpattern.Match(tmp).Value;
-                    tmp = tmp.Substring(1);
-                    T.durability = Convert.ToUInt64(tmp);
-                    tmp = "";
-
-                    //имя события
-                    subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+,[^,\\r$]*");
-                    tmp = subpattern.Match(item.Value).Value;
-                    subpattern = new Regex(",.+");
-                    tmp = subpattern.Match(tmp).Value;
-                    if (tmp.Length != 0) { tmp = tmp.Substring(1); }
-                    T.tjevent = tmp;
-                    tmp = "";
-
-                    //уровень события в стеке
-                    subpattern = new Regex("[0-9][0-9]:[0-9][0-9].[0-9]+-[0-9]+,[^,\\r$]*,[0-9]+");
-                    tmp = subpattern.Match(item.Value).Value;
-                    subpattern = new Regex(",[0-9]+");
-                    tmp = subpattern.Match(tmp).Value;
-                    if (tmp.Length != 0) { tmp = tmp.Substring(1); } else { tmp = null; }
-                    T.level = Convert.ToInt32(tmp);
-                    tmp = "";
-
-                    //поиск свойств
-                    T.property.process = GetParam(@"process=", item.Value);
-                    T.property.processName = GetParam(@"p:processName=", item.Value);
-                    T.property.clientID = GetParam(@"t:clientID=", item.Value);
-                    T.property.applicationName = GetParam(@"t:applicationName=", item.Value);
-                    T.property.computerName = GetParam(@"t:computerName=", item.Value);
-                    T.property.Interface = GetParam(@"Interface=", item.Value);
-                    T.property.IName = GetParam(@"IName=", item.Value);
-                    T.property.Method = GetParam(@"Method=", item.Value);
-                    T.property.CallID = Convert.ToInt32(GetParam(@"CallID=", item.Value));
-                    T.property.MName = GetParam(@"MName=", item.Value);
-                    T.property.Memory = Convert.ToInt32(GetParam(@"Memory=", item.Value));
-                    T.property.MemoryPeak = Convert.ToInt32(GetParam(@"MemoryPeak=", item.Value));
-                    T.property.MemoryPeak = Convert.ToInt32(GetParam(@"MemoryPeak=", item.Value));
-                    T.property.InBytes = Convert.ToInt32(GetParam(@"InBytes=", item.Value));
-                    T.property.OutBytes = Convert.ToInt32(GetParam(@"OutBytes=", item.Value));
-                    T.property.Protected = Convert.ToInt32(GetParam(@"Protected=", item.Value));
-                    T.property.Txt = GetParam(@"Txt=", item.Value);
-                    T.property.address = GetParam(@"address=", item.Value);
-                    T.property.result = GetParam(@"result=", item.Value);
-                    T.property.Usr = GetParam(@"Usr=", item.Value);
-
-                    TJList.Add(T);
+                        ind = ind + 1;
+                        if ((ind == lastcount)&(len == buflen)) { roll = item.Value; }
+                        else { TJList.Add(ParseStringTJ(item.Value, datesfile)); }
+                    }
                 }
+                
             }
             return TJList;
 
