@@ -17,3 +17,10 @@ D:\git\TJ\TJ\bin\Debug\TJ.pdb
 D:\git\TJ\TJ\obj\Debug\TJ.exe
 D:\git\TJ\TJ\obj\Debug\TJ.pdb
 D:\git\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache
+H:\project\TJ\TJ\bin\Debug\TJ.exe.config
+H:\project\TJ\TJ\bin\Debug\TJ.exe
+H:\project\TJ\TJ\bin\Debug\TJ.pdb
+H:\project\TJ\TJ\obj\Debug\TJ.csproj.CoreCompileInputs.cache
+H:\project\TJ\TJ\obj\Debug\TJ.exe
+H:\project\TJ\TJ\obj\Debug\TJ.pdb
+H:\project\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache

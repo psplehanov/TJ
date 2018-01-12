@@ -13,7 +13,7 @@ namespace TJ
     {
         public DateTime date;
         public int mks;
-        public ulong durability;
+        public long durability;
         public string tjevent;
         public int level;
 
@@ -43,6 +43,14 @@ namespace TJ
         public string address;
         public string result;
         public string Usr;
+
+        public int OSThread;
+        public int connectID;
+        public bool Trans;
+        public string Sdbl;
+        public int Rows;
+        public string Func;
+        public string Context;
     }
 
     class Program
@@ -55,7 +63,7 @@ namespace TJ
             DateTime localDate = DateTime.Now;
 #endif
 
-            String path = @"D:\ТЖ";
+            String path = @"G:\1c_logs";
             ReadTJ(path);
 
 #if (DEBUG)
@@ -73,13 +81,19 @@ namespace TJ
         static string GetParam(string param, string source)
         {
             int sublen = param.Length;
-            var pattern = new Regex(param + "[^,\\r$]+");
+            var pattern = new Regex(param + "[^,]*");
             string tmp = pattern.Match(source).Value;
             if (tmp.Length > sublen) {tmp = tmp.Substring(sublen);}
             else {tmp = null;}
             return tmp;
         }
 
+        /// <summary>
+        /// Конвертирование строки ТЖ в объект TJObject
+        /// </summary>
+        /// <param name="strTJ">Строка ТЖ</param>
+        /// <param name="filename">Имя файла без .log</param>
+        /// <returns></returns>
         static TJobject ParseStringTJ(string strTJ, string filename)
         {
             CultureInfo provider = CultureInfo.InvariantCulture;
@@ -106,7 +120,7 @@ namespace TJ
             subpattern = new Regex("-[0-9]+");
             tmp = subpattern.Match(tmp).Value;
             tmp = tmp.Substring(1);
-            T.durability = Convert.ToUInt64(tmp);
+            T.durability = Convert.ToInt64(tmp);
             tmp = "";
 
             //имя события
@@ -148,6 +162,13 @@ namespace TJ
             T.property.address = GetParam(@"address=", strTJ);
             T.property.result = GetParam(@"result=", strTJ);
             T.property.Usr = GetParam(@"Usr=", strTJ);
+            T.property.OSThread = Convert.ToInt32(GetParam(@"OSThread=", strTJ));
+            T.property.connectID = Convert.ToInt32(GetParam(@"t:connectID=", strTJ));
+            if (GetParam(@"Trans=", strTJ) == "0") { T.property.Trans = false; } else { T.property.Trans = true; }
+            T.property.Sdbl = GetParam(@"Sdbl=", strTJ);
+            T.property.Rows = Convert.ToInt32(GetParam(@"Rows=", strTJ));
+            T.property.Func = GetParam(@"Func=", strTJ);
+            T.property.Context = GetParam(@"Context=", strTJ);
 
             return T;
         }
@@ -168,34 +189,40 @@ namespace TJ
                 StreamReader objReader = new StreamReader(f);
 
                 int len = 0;
-                string roll = "";
+                string rollstr = "";
                 while ((len = objReader.ReadBlock(buffer, 0, buflen)) != 0)
                 {
                     string bufstr = new string(buffer);
+                    //очищаем хвост буфера при последнем чтении
                     if (len < buflen) { bufstr = bufstr.Remove(len); }
-                    var tpattern = new Regex("[0-9][0-9]:[0-9][0-9]\\.[0-9]{4}.+");
-                    var read = tpattern.Matches(bufstr);
 
-                    int rollindex = 0;
-                    if (read.Count > 0) { rollindex = bufstr.IndexOf(read[0].Value); }
-                    int lastcount = read.Count;
+                    //C# не видит все что дальше переноса, заменим его на пустую строку. В запросах исползуются все три вида переноса.
+                    bufstr = bufstr.Replace(Environment.NewLine, "");
+                    bufstr = bufstr.Replace("\r", "");
+                    bufstr = bufstr.Replace("\n", "");
+                    //Разобьем на строки начинаем со второй
+                    string pattern = "(.)([0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,)";
+                    bufstr = Regex.Replace(bufstr, pattern, "$1" + '\n' + "$2");
+                    string[] strTJ = bufstr.Split('\n');
 
-                    int ind = 0;
-                    foreach (Match item in read)
+                    int lastcount = strTJ.Length;
+                    if (lastcount == 0) { break; }
+
+                    int index = 0;
+
+                    if (Regex.IsMatch(strTJ[0], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == false)
                     {
-                        if (rollindex != 0)
-                        {
-                            string firststring = roll + bufstr.Remove(rollindex);
-                            TJList.Add(ParseStringTJ(firststring, datesfile));
-                            rollindex = 0;
-                        }
+                        rollstr = rollstr.Replace(Environment.NewLine, "");
+                        TJList.Add(ParseStringTJ(rollstr + strTJ[0], datesfile));
+                        index = 1;
+                    }
 
-                        ind = ind + 1;
-                        if ((ind == lastcount)&(len == buflen)) { roll = item.Value; }
-                        else { TJList.Add(ParseStringTJ(item.Value, datesfile)); }
+                    for (int i= index; i<lastcount;i++)
+                    {
+                        if ((i == lastcount - 1) & (len == buflen)) { rollstr = strTJ[i]; }
+                        else { TJList.Add(ParseStringTJ(strTJ[i], datesfile)); }
                     }
                 }
-                
             }
             return TJList;
 
