@@ -11,3 +11,9 @@ E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyR
 E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.csproj.CoreCompileInputs.cache
 E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.exe
 E:\OneDrive\Программы\project\TJ\TJ\obj\Debug\TJ.pdb
+D:\git\TJ\TJ\bin\Debug\TJ.exe.config
+D:\git\TJ\TJ\bin\Debug\TJ.exe
+D:\git\TJ\TJ\bin\Debug\TJ.pdb
+D:\git\TJ\TJ\obj\Debug\TJ.exe
+D:\git\TJ\TJ\obj\Debug\TJ.pdb
+D:\git\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache
