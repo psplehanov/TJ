@@ -3,3 +3,9 @@ D:\git\TJ\TJ\bin\Release\TJ.exe
 D:\git\TJ\TJ\bin\Release\TJ.pdb
 D:\git\TJ\TJ\obj\Release\TJ.exe
 D:\git\TJ\TJ\obj\Release\TJ.pdb
+H:\project\TJ\TJ\bin\Release\TJ.exe.config
+H:\project\TJ\TJ\bin\Release\TJ.exe
+H:\project\TJ\TJ\bin\Release\TJ.pdb
+H:\project\TJ\TJ\obj\Release\TJ.csproj.CoreCompileInputs.cache
+H:\project\TJ\TJ\obj\Release\TJ.exe
+H:\project\TJ\TJ\obj\Release\TJ.pdb
