@@ -72,6 +72,8 @@ namespace TJ
 
         public string Finish;
 
+        public string Parent;
+
     }
 
     class Program
@@ -92,7 +94,7 @@ namespace TJ
             DateTime localDate = DateTime.Now;
 #endif
 
-            String path = @"d:\ТЖ";
+            String path = @"D:\ТЖ\";
             List<TJobject> TJList = new List<TJobject>();
             int count = 0;
 
@@ -106,14 +108,17 @@ namespace TJ
             //    debstr = debstr + TJ.date.ToString() + "." + TJ.mks + Environment.NewLine;
             //}
 
-             TJCoord coord = new TJCoord();
-             while (ReadTJ(path, ref TJList,1000,ref coord))
+
+
+            TJCoord coord = new TJCoord();
+            while (ReadTJ(path, ref TJList,1000,ref coord))
             {
                 count = TJList.Count + count;
                 TJList.Clear();
-                Console.WriteLine(coord.filename);
+                Console.WriteLine(coord.filename); 
             }
-            
+
+            count = TJList.Count + count;
 
 #if (DEBUG)
             DateTime localDateEnd = DateTime.Now;
@@ -209,6 +214,10 @@ namespace TJ
             var patternfile = new Regex("[0-9]{8}.log");
             string datesfile = patternfile.Match(filename).Value;
             datesfile = datesfile.Remove(8);
+
+            patternfile = new Regex(@"[^\\]+\\[0-9]{8}.log");
+            string parent = patternfile.Match(filename).Value;
+            T.property.Parent = parent.Remove(parent.Length -  13);
 
             //дата и время начала выполнения
             var subpattern = new Regex("[0-9][0-9]:[0-9][0-9]");
