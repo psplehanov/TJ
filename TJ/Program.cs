@@ -92,7 +92,7 @@ namespace TJ
             DateTime localDate = DateTime.Now;
 #endif
 
-            String path = @"G:\1c_logs\ALLEvents\";
+            String path = @"d:\ТЖ";
             List<TJobject> TJList = new List<TJobject>();
             int count = 0;
 
@@ -109,9 +109,11 @@ namespace TJ
              TJCoord coord = new TJCoord();
              while (ReadTJ(path, ref TJList,1000,ref coord))
             {
+                count = TJList.Count + count;
+                TJList.Clear();
                 Console.WriteLine(coord.filename);
             }
-            count = TJList.Count;
+            
 
 #if (DEBUG)
             DateTime localDateEnd = DateTime.Now;
@@ -351,13 +353,16 @@ namespace TJ
 #endif
                         for (int i = 0; i < rollstrTJ.Length; i++)
                         {
-                            TJList.Add(ParseStringTJ(rollstrTJ[i], f));
+                            if (Regex.IsMatch(rollstrTJ[i], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
+                            {
+                                TJList.Add(ParseStringTJ(rollstrTJ[i], f));
+                            }
                         }
                         index = 1;
                     }
                     else
                     {
-                        if (Regex.IsMatch(rollstr, "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == true)
+                        if (Regex.IsMatch(rollstr, "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
                         {
 #if (DEBUG)
                             _rollstr = rollstr;
@@ -460,7 +465,10 @@ namespace TJ
 #endif
                         for (int i = 0; i < rollstrTJ.Length; i++)
                         {
-                            TJList.Add(ParseStringTJ(rollstrTJ[i], f));
+                            if (Regex.IsMatch(rollstrTJ[i], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
+                            {
+                                TJList.Add(ParseStringTJ(rollstrTJ[i], f));
+                            }
                         }
                         index = 1;
                     }
