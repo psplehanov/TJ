@@ -94,38 +94,58 @@ namespace TJ
             DateTime localDate = DateTime.Now;
 #endif
 
-            String path = @"D:\ТЖ\";
+            String path = @"D:\OneDrive\Программы\project\err";
+
+            //DebugAllRead(path);
+            DebugCountRead(path);
+
+
+        }
+
+        static void DebugAllRead(string path)
+        {
+            DateTime localDate = DateTime.Now;
+
             List<TJobject> TJList = new List<TJobject>();
             int count = 0;
 
 
-            //ReadTJ(path, ref TJList);
-            //count = TJList.Count;
+            ReadTJ(path, ref TJList);
+            count = TJList.Count;
 
-            //string debstr = "";
-           // foreach (TJobject TJ in TJList)
-            //{
-            //    debstr = debstr + TJ.date.ToString() + "." + TJ.mks + Environment.NewLine;
-            //}
-
-
-
-            TJCoord coord = new TJCoord();
-            while (ReadTJ(path, ref TJList,1000,ref coord))
+            string debstr = "";
+            foreach (TJobject TJ in TJList)
             {
-                count = TJList.Count + count;
-                TJList.Clear();
-                Console.WriteLine(coord.filename); 
+                debstr = debstr + TJ.date.ToString() + "." + TJ.mks + Environment.NewLine;
             }
-
-            count = TJList.Count + count;
-
-#if (DEBUG)
             DateTime localDateEnd = DateTime.Now;
             Console.WriteLine("Count = " + count);
             Console.WriteLine(localDateEnd - localDate);
             Console.ReadKey();
-#endif
+        }
+
+        static void DebugCountRead(string path)
+        {
+
+            DateTime localDate = DateTime.Now;
+
+            List<TJobject> TJList = new List<TJobject>();
+            int count = 0;
+
+             TJCoord coord = new TJCoord();
+             while (ReadTJ(path, ref TJList,1000,ref coord))
+             {
+                 count = TJList.Count + count;
+                 TJList.Clear();
+                 Console.WriteLine(coord.filename); 
+            }
+
+             count = TJList.Count + count;
+
+            DateTime localDateEnd = DateTime.Now;
+            Console.WriteLine("Count = " + count);
+            Console.WriteLine(localDateEnd - localDate);
+            Console.ReadKey();
         }
 
         static int FindStrInArrByte(string findstr, byte[] bufferbyte)
@@ -292,6 +312,53 @@ namespace TJ
             return T;
         }
 
+        static int FirstAndLastString(ref string[] strTJ, ref string rollstr, ref List<TJobject> TJList, string f)
+        {
+            int index = 0;
+
+            if (Regex.IsMatch(strTJ[0], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == false)
+            {
+                rollstr = rollstr.Replace(Environment.NewLine, "") + strTJ[0];
+
+                if (strTJ.Length != 1)
+                {
+                    string rollpattern = "(.)([0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,)";
+                    rollstr = Regex.Replace(rollstr, rollpattern, "$1" + '\n' + "$2");
+                    string[] rollstrTJ = rollstr.Split('\n');
+
+#if (DEBUG)
+                    _rollstr = rollstr;
+                    _rollstrTJ = rollstrTJ;
+#endif
+                    for (int i = 0; i < rollstrTJ.Length; i++)
+                    {
+                        if (Regex.IsMatch(rollstrTJ[i], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
+                        {
+                            TJList.Add(ParseStringTJ(rollstrTJ[i], f));
+                        }
+                    }
+
+                }
+                else
+                {
+                    int test = 0;
+                    test++;
+                }
+                index = 1;
+            }
+            else
+            {
+                if (Regex.IsMatch(rollstr, "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == true)
+                {
+#if (DEBUG)
+                    _rollstr = rollstr;
+#endif
+                    TJList.Add(ParseStringTJ(rollstr, f));
+                }
+            }
+            return index;
+        }
+
         /// <summary>
         ///Чтение элементов ТЖ в количестве count
         /// </summary>
@@ -346,39 +413,8 @@ namespace TJ
                     int lastcount = strTJ.Length;
                     if (lastcount == 0) { break; }
 
-                    int index = 0;
-
-                    if (Regex.IsMatch(strTJ[0], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == false)
-                    {
-                        rollstr = rollstr.Replace(Environment.NewLine, "") + strTJ[0];
-
-                        string rollpattern = "(.)([0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,)";
-                        rollstr = Regex.Replace(rollstr, rollpattern, "$1" + '\n' + "$2");
-                        string[] rollstrTJ = rollstr.Split('\n');
-
-#if (DEBUG)
-                        _rollstr = rollstr;
-                        _rollstrTJ = rollstrTJ;
-#endif
-                        for (int i = 0; i < rollstrTJ.Length; i++)
-                        {
-                            if (Regex.IsMatch(rollstrTJ[i], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
-                            {
-                                TJList.Add(ParseStringTJ(rollstrTJ[i], f));
-                            }
-                        }
-                        index = 1;
-                    }
-                    else
-                    {
-                        if (Regex.IsMatch(rollstr, "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
-                        {
-#if (DEBUG)
-                            _rollstr = rollstr;
-#endif
-                            TJList.Add(ParseStringTJ(rollstr, f));
-                        }
-                    }
+                    //Соединяем последнюю строку из прошлого чтения и первую этого
+                    int index = FirstAndLastString(ref strTJ, ref rollstr, ref TJList, f);
 
                     for (int i = index; i < lastcount; i++)
                     {
@@ -458,40 +494,10 @@ namespace TJ
                     int lastcount = strTJ.Length;
                     if (lastcount == 0) { break; }
 
-                    int index = 0;
-
-                    if (Regex.IsMatch(strTJ[0], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == false)
-                    {
-                        rollstr = rollstr.Replace(Environment.NewLine, "") + strTJ[0];
-
-                        string rollpattern = "(.)([0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,)";
-                        rollstr = Regex.Replace(rollstr, rollpattern, "$1" + '\n' + "$2");
-                        string[] rollstrTJ = rollstr.Split('\n');
-
-#if (DEBUG)
-                        _rollstr = rollstr;
-                        _rollstrTJ = rollstrTJ;
-#endif
-                        for (int i = 0; i < rollstrTJ.Length; i++)
-                        {
-                            if (Regex.IsMatch(rollstrTJ[i], "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,"))
-                            {
-                                TJList.Add(ParseStringTJ(rollstrTJ[i], f));
-                            }
-                        }
-                        index = 1;
-                    }
-                    else
-                    {
-                        if (Regex.IsMatch(rollstr, "[0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,") == true)
-                        {
-#if (DEBUG)
-                            _rollstr = rollstr;
-#endif
-                            TJList.Add(ParseStringTJ(rollstr, f));
-                        }
-                    }
+                    //Соединяем последнюю строку из прошлого чтения и первую этого
+                    int index = FirstAndLastString(ref strTJ, ref rollstr, ref TJList, f);
                     
+                    //просматриваем все остальные строки
                     for (int i= index; i<lastcount;i++)
                     {
                         if ((i == lastcount - 1) & (len == buflen)) { rollstr = strTJ[i]; }
