@@ -72,6 +72,8 @@ class TJProperty
     public int SessionID;
     public string Regions;
     public string Locks;
+    public string DeadlockConnectionIntersections;
+    public bool escalating;
 }
 
 
@@ -174,6 +176,8 @@ class TJ
         T.property.SessionID = Convert.ToInt32(GetParam(@"SessionID=", strTJ));
         T.property.Regions = GetParam(@"Regions=", strTJ);
         T.property.Locks = GetParam(@"Locks=", strTJ);
+        T.property.DeadlockConnectionIntersections = GetParam(@"DeadlockConnectionIntersections=", strTJ);
+        if (GetParam(@"escalating=", strTJ) == "true") { T.property.escalating = true; } else { T.property.Trans = false; }
 
         return T;
     }
