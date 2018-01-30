@@ -5,6 +5,19 @@ using System.Text.RegularExpressions;
 using System.Globalization;
 using System.IO;
 
+class TJCoordFin
+{
+    public List<string> filenames;
+    public List<long> offsets;
+
+    public TJCoordFin()
+    {
+        filenames = new List<string>();
+        offsets = new List<long>();
+    }
+
+}
+
 class TJCoord
 {
     public string filename;
@@ -74,6 +87,12 @@ class TJProperty
     public string Locks;
     public string DeadlockConnectionIntersections;
     public bool escalating;
+
+    public string AppID;
+    public string Ref;
+    public string Host;
+    public int Connection;
+
 }
 
 
@@ -179,11 +198,138 @@ class TJ
         T.property.DeadlockConnectionIntersections = GetParam(@"DeadlockConnectionIntersections=", strTJ);
         if (GetParam(@"escalating=", strTJ) == "true") { T.property.escalating = true; } else { T.property.Trans = false; }
 
+        T.property.AppID = GetParam(@"AppID=", strTJ);
+        T.property.Ref = GetParam(@"Ref=", strTJ);
+        T.property.Host = GetParam(@"Host=", strTJ);
+        T.property.Connection = Convert.ToInt32(GetParam(@"Connection=", strTJ));
         return T;
     }
 
 
     #region ReadTJ
+    /// <summary>
+    ///Чтение элементов ТЖ в количестве count с возможностью чтения только измененных файлов
+    ///Возвращает true если есть данные для чтения
+    /// </summary>
+    /// <param name="path">путь к папке с ТЖ</param>
+    /// <param name="TJList">возвращает список элементов ТЖ</param>
+    /// <param name="count">количество элементов для чтения</param>
+    /// <param name="coord">координаты места начала|окончания чтения</param>
+    /// <param name="coordFin">координаты места окончания чтения текста</param>
+    public static bool ReadTJ(string path, ref List<TJobject> TJList, int count, ref TJCoord coord, ref TJCoordFin coordFin)
+    {
+        bool pass = true;
+        //if (coord.filename == "") { pass = false; }
+
+        List<string> files = new List<string>(Directory.EnumerateFiles(path, "*.log", SearchOption.AllDirectories));
+
+        foreach (var f in files)
+        {
+            int len = 0;
+            string rollstr = "";
+            long offset = 0;
+            long offsetfin = 0;
+
+            //Ищем конец файла при чтении с изменениями
+            if (coordFin.filenames != null)
+            {
+                for (int i = 0; i < coordFin.filenames.Count; i++)
+                {
+                    if (coordFin.filenames[i] == f)
+                    {
+                        offsetfin = coordFin.offsets[i];
+                        break;
+                    }
+                }
+            }
+
+            //смещение при чтении файла, местоположение в файле после чтения блока
+            if ((coord.filename == f) || (coord.filename == ""))  { pass = false; }
+            //так как мы читаем файлы последовательно, пропускаем те которые уже были прочитаны.
+            if (pass) { continue; }
+
+            char[] buffer = new char[buflen];
+            byte[] bufferbyte = new byte[buflen];
+
+            BinaryReader objReader = new BinaryReader(File.Open(f, FileMode.Open));
+            objReader.BaseStream.Position = offsetfin + coord.offset;
+
+            while (true)
+            {
+                bufferbyte = objReader.ReadBytes(buflen);
+                len = bufferbyte.Length;
+
+                offset = offset + len;
+
+                //Разобьем на строки начинаем со второй
+                string bufstr = ArrByteToArrString(bufferbyte);
+                string pattern = "(.)([0-9][0-9]:[0-9][0-9]\\.([0-9]{4}|[0-9]{6})-[0-9]+,)";
+                bufstr = Regex.Replace(bufstr, pattern, "$1" + '\n' + "$2");
+                string[] strTJ = bufstr.Split('\n');
+
+                int lastcount = strTJ.Length;
+                if (lastcount == 0) { break; }
+
+                //Соединяем последнюю строку из прошлого чтения и первую этого
+                int index = FirstAndLastString(ref strTJ, ref rollstr, ref TJList, f);
+
+                for (int i = index; i < lastcount; i++)
+                {
+                    //Количество возвращаемых элементов достигло count
+                    if (count == 0)
+                    {
+                        coord.filename = f;
+
+                        //Ищем следующий элемент strTJ[i] в tmpstr                                 
+                        string findstr = strTJ[i].Remove(13);
+
+
+                        if (offset < buflen)
+                        {
+                            coord.offset = FindStrInArrByte(findstr, bufferbyte) + coord.offset;
+                        }
+                        else
+                        {
+                            coord.offset = offset - len + FindStrInArrByte(findstr, bufferbyte) + coord.offset;
+                        }
+
+                        objReader.Close();
+                        return true;
+                    }
+
+                    if ((i == lastcount - 1) & (len == buflen)) { rollstr = strTJ[i]; }
+                    else { TJList.Add(ParseStringTJ(strTJ[i], f)); }
+
+                    count--;
+                }
+
+                //окончание файла. есть возможность, что len == buflen и при этом наступил конец файла 
+                if (len != buflen)
+                {
+                    int indexFile = 0;
+                    indexFile = coordFin.filenames.IndexOf(f);
+                    if (indexFile == -1)
+                    {
+                        coordFin.filenames.Add(f);
+                        coordFin.offsets.Add(objReader.BaseStream.Position);
+                    }
+                    else
+                    {
+                        coordFin.offsets[indexFile] = objReader.BaseStream.Position;
+                    }
+                    break;
+                }
+            }
+            coord.offset = 0;
+            objReader.Close();
+        }
+
+        coord.filename = "";
+        coord.offset = 0;
+        return false;
+    }
+
+
     /// <summary>
     ///Чтение элементов ТЖ в количестве count
     /// </summary>
@@ -202,7 +348,7 @@ class TJ
         {
             int len = 0;
             string rollstr = "";
-            int offset = 0;
+            long offset = 0;
 
             //смещение при чтении файла, местоположение в файле после чтения блока
             if (coord.filename == f) { pass = false; }

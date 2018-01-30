@@ -24,3 +24,9 @@ H:\project\TJ\TJ\obj\Debug\TJ.csproj.CoreCompileInputs.cache
 H:\project\TJ\TJ\obj\Debug\TJ.exe
 H:\project\TJ\TJ\obj\Debug\TJ.pdb
 H:\project\TJ\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache
+E:\project\TJ\bin\Debug\TJ.exe.config
+E:\project\TJ\obj\Debug\TJ.exe
+E:\project\TJ\obj\Debug\TJ.pdb
+E:\project\TJ\bin\Debug\TJ.exe
+E:\project\TJ\bin\Debug\TJ.pdb
+E:\project\TJ\obj\Debug\TJ.csprojResolveAssemblyReference.cache

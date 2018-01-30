@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Globalization;
+using System.Timers;
 
 
 namespace TJA
@@ -13,7 +8,12 @@ namespace TJA
    
     class Program
     {
-        
+
+        private static Timer aTimer;
+        private static List<TJobject> TJList;
+        private static TJCoord coord;
+        private static TJCoordFin coordFin;
+        private static string pathTimer;
 
         static void Main(string[] args)
         {
@@ -21,10 +21,11 @@ namespace TJA
             DateTime localDate = DateTime.Now;
 #endif
 
-            String path = @"G:\1c_logs\locks\rphost_10040";
+            String path = @"E:\test\";
 
-            DebugAllRead(path);
+            //DebugAllRead(path);
             //DebugCountRead(path);
+            DebugCountReadWithChange(@"E:\1c\ТЖ\ALL");
 
 
         }
@@ -45,6 +46,15 @@ namespace TJA
             {
                 debstr = debstr + TJ.date.ToString() + "." + TJ.mks + Environment.NewLine;
             }
+
+            for (int i=0; i<TJList.Count;i++)
+            {
+                if (TJList[i].tjevent == @"ADMIN")
+                {
+                    Console.WriteLine("beep");
+                }
+            }
+
             DateTime localDateEnd = DateTime.Now;
             Console.WriteLine("Count = " + count);
             Console.WriteLine(localDateEnd - localDate);
@@ -74,5 +84,48 @@ namespace TJA
             Console.WriteLine(localDateEnd - localDate);
             Console.ReadKey();
         }
+
+        static void DebugCountReadWithChange(string path)
+        {
+
+            DateTime localDate = DateTime.Now;
+
+            TJList = new List<TJobject>();
+            coord = new TJCoord();
+            coordFin = new TJCoordFin();
+            pathTimer = path;
+
+            
+            aTimer = new Timer(5000);
+            aTimer.Elapsed += OnTimedEvent;
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
+
+           
+
+            DateTime localDateEnd = DateTime.Now;
+
+            Console.WriteLine(localDateEnd - localDate);
+            Console.ReadKey();
+        }
+
+        private static void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            int count = 0;
+
+            //приостанавливаем таймер на время чтения
+            aTimer.Enabled = false;
+            while (TJ.ReadTJ(pathTimer, ref TJList, 1000, ref coord, ref coordFin))
+            {
+                count = TJList.Count + count;
+                TJList.Clear();
+                Console.WriteLine(coord.filename);
+            }
+            aTimer.Enabled = true;
+
+            Console.WriteLine("timer");
+            Console.WriteLine("Count = " + count);
+        }
+
     }
 }
